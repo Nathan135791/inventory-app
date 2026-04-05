@@ -262,7 +262,6 @@ function renderInventoryTable() {
                 <td>
                     ${returnBtn}
                     <button class="btn-small btn-edit" onclick="editItem('${item.id}')">Edit</button>
-                    <button class="btn-small btn-delete" onclick="deleteItem('${item.id}')">Delete</button>
                 </td>
             </tr>
         `;

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal - Inventory Manager</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .admin-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            margin: 100px auto;
+        }
+        .login-card h2 {
+            margin-bottom: 20px;
+            color: #dc2626;
+        }
+        .pin-input {
+            font-size: 24px;
+            letter-spacing: 10px;
+            text-align: center;
+            padding: 15px;
+            width: 200px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .pin-input:focus {
+            outline: none;
+            border-color: #dc2626;
+        }
+        .admin-header {
+            background: #dc2626;
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .admin-header h1 {
+            color: white;
+            margin: 0;
+        }
+        .btn-logout {
+            background: white;
+            color: #dc2626;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .item-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .item-info h3 {
+            margin: 0 0 5px 0;
+        }
+        .item-info p {
+            margin: 0;
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+        .btn-delete-large {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .btn-delete-large:hover {
+            background: #b91c1c;
+        }
+        .warning-text {
+            color: #dc2626;
+            font-size: 0.85rem;
+            margin-top: 10px;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #4f46e5;
+            text-decoration: none;
+        }
+        .empty-message {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Login Screen -->
+        <div id="loginScreen" class="login-card">
+            <h2>Admin Portal</h2>
+            <p>Enter PIN to access</p>
+            <input type="password" id="pinInput" class="pin-input" maxlength="4" placeholder="****">
+            <br>
+            <button onclick="checkPin()" class="btn-primary" style="width: 200px;">Enter</button>
+            <p class="warning-text">Authorized personnel only</p>
+        </div>
+
+        <!-- Admin Panel -->
+        <div id="adminPanel" style="display: none;">
+            <a href="/" class="back-link">← Back to Main App</a>
+
+            <div class="admin-header">
+                <h1>Admin Portal</h1>
+                <button class="btn-logout" onclick="logout()">Logout</button>
+            </div>
+
+            <div class="stats" style="margin-bottom: 20px;">
+                <div class="stat-card">
+                    <span class="stat-value" id="totalItems">0</span>
+                    <span class="stat-label">Total Items</span>
+                </div>
+                <div class="stat-card" style="background: #fee2e2;">
+                    <span class="stat-value" id="checkedOutCount">0</span>
+                    <span class="stat-label">Checked Out</span>
+                </div>
+            </div>
+
+            <h2>All Inventory Items</h2>
+            <div id="itemsList">
+                <!-- Items will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast hidden"></div>
+
+    <script>
+        const API_URL = '/api';
+        const ADMIN_PIN = '1234'; // Change this PIN
+        let items = [];
+
+        // Check PIN
+        function checkPin() {
+            const pin = document.getElementById('pinInput').value;
+            if (pin === ADMIN_PIN) {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('adminPanel').style.display = 'block';
+                loadItems();
+            } else {
+                showToast('Invalid PIN', 'error');
+                document.getElementById('pinInput').value = '';
+            }
+        }
+
+        // Enter key support
+        document.getElementById('pinInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') checkPin();
+        });
+
+        // Logout
+        function logout() {
+            document.getElementById('loginScreen').style.display = 'block';
+            document.getElementById('adminPanel').style.display = 'none';
+            document.getElementById('pinInput').value = '';
+        }
+
+        // Load Items
+        async function loadItems() {
+            try {
+                const res = await fetch(`${API_URL}/items`);
+                items = await res.json();
+                renderItems();
+                updateStats();
+            } catch (error) {
+                showToast('Failed to load items', 'error');
+            }
+        }
+
+        // Render Items
+        function renderItems() {
+            const container = document.getElementById('itemsList');
+
+            if (items.length === 0) {
+                container.innerHTML = '<div class="empty-message">No items in inventory</div>';
+                return;
+            }
+
+            container.innerHTML = items.map(item => {
+                const status = item.status === 'checked_out'
+                    ? `<span style="color: #dc2626;">Checked out to ${item.borrowed_by || 'Unknown'}</span>`
+                    : '<span style="color: #16a34a;">Available</span>';
+
+                return `
+                    <div class="item-card">
+                        <div class="item-info">
+                            <h3>${escapeHtml(item.name)}</h3>
+                            <p>Quantity: ${item.quantity} | ${status}</p>
+                            <p>${item.notes || ''}</p>
+                        </div>
+                        <button class="btn-delete-large" onclick="deleteItem('${item.id}', '${escapeHtml(item.name)}')">
+                            Delete
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Update Stats
+        function updateStats() {
+            document.getElementById('totalItems').textContent = items.length;
+            document.getElementById('checkedOutCount').textContent = items.filter(i => i.status === 'checked_out').length;
+        }
+
+        // Delete Item
+        async function deleteItem(id, name) {
+            if (!confirm(`Are you sure you want to DELETE "${name}"?\n\nThis action cannot be undone!`)) return;
+
+            // Double confirmation for safety
+            if (!confirm(`FINAL WARNING: Delete "${name}" permanently?`)) return;
+
+            try {
+                const res = await fetch(`${API_URL}/items/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    showToast('Item deleted successfully', 'success');
+                    loadItems();
+                } else {
+                    throw new Error('Delete failed');
+                }
+            } catch (error) {
+                showToast('Failed to delete item', 'error');
+            }
+        }
+
+        // Toast
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type}`;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
