@@ -12,7 +12,7 @@
             <h1>Inventory Manager</h1>
             <nav>
                 <button class="nav-btn active" data-view="dashboard">Dashboard</button>
-                <button class="nav-btn" data-view="checkin">Check In</button>
+                <button class="nav-btn" data-view="additem">Add Item</button>
                 <button class="nav-btn" data-view="checkout">Check Out</button>
                 <button class="nav-btn" data-view="history">History</button>
             </nav>
@@ -57,19 +57,13 @@
             </div>
         </section>
 
-        <!-- Check-In View -->
-        <section id="checkin" class="view">
-            <h2>Check In Items</h2>
-            <div class="form-toggle">
-                <button class="toggle-btn active" data-type="new">Add New Item</button>
-                <button class="toggle-btn" data-type="existing">Add to Existing</button>
-            </div>
-
-            <!-- New Item Form -->
+        <!-- Add Item View -->
+        <section id="additem" class="view">
+            <h2>Add New Item</h2>
             <form id="newItemForm" class="form-card">
                 <div class="form-group">
                     <label for="newItemName">Item Name</label>
-                    <input type="text" id="newItemName" required>
+                    <input type="text" id="newItemName" required placeholder="Enter item name">
                 </div>
                 <div class="form-group">
                     <label for="newItemQty">Quantity</label>
@@ -77,28 +71,9 @@
                 </div>
                 <div class="form-group">
                     <label for="newItemNotes">Notes (optional)</label>
-                    <textarea id="newItemNotes" rows="3"></textarea>
+                    <textarea id="newItemNotes" rows="3" placeholder="Description, location, etc."></textarea>
                 </div>
                 <button type="submit" class="btn-primary">Add Item</button>
-            </form>
-
-            <!-- Existing Item Form -->
-            <form id="existingItemForm" class="form-card hidden">
-                <div class="form-group">
-                    <label for="existingItemSelect">Select Item</label>
-                    <select id="existingItemSelect" required>
-                        <option value="">-- Select Item --</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="addQty">Quantity to Add</label>
-                    <input type="number" id="addQty" min="1" value="1" required>
-                </div>
-                <div class="form-group">
-                    <label for="addNotes">Notes (optional)</label>
-                    <textarea id="addNotes" rows="3"></textarea>
-                </div>
-                <button type="submit" class="btn-primary">Check In</button>
             </form>
         </section>
 

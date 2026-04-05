@@ -307,6 +307,24 @@ tr.low-stock:hover {
     color: white;
 }
 
+.btn-return {
+    background: var(--success);
+    color: white;
+}
+
+.btn-return:hover {
+    background: #15803d;
+}
+
+.home-status {
+    color: var(--success);
+    font-weight: 500;
+}
+
+.checked-out {
+    background: #fefce8;
+}
+
 /* Badges */
 .badge {
     display: inline-block;

@@ -42,7 +42,7 @@ function switchView(viewName) {
     // Load data for specific views
     if (viewName === 'dashboard') {
         loadItems();
-    } else if (viewName === 'checkin' || viewName === 'checkout') {
+    } else if (viewName === 'checkout') {
         populateItemSelects();
     } else if (viewName === 'history') {
         loadTransactions();
@@ -248,6 +248,10 @@ function renderInventoryTable() {
             ? formatDate(item.due_date)
             : '-';
 
+        const returnBtn = isCheckedOut
+            ? `<button class="btn-small btn-return" onclick="returnItem('${item.id}')">Return</button>`
+            : '';
+
         return `
             <tr class="${isCheckedOut ? 'checked-out' : ''} ${item.quantity <= 5 ? 'low-stock' : ''}">
                 <td>${escapeHtml(item.name)}</td>
@@ -256,6 +260,7 @@ function renderInventoryTable() {
                 <td>${withPurpose}</td>
                 <td>${dueDate}</td>
                 <td>
+                    ${returnBtn}
                     <button class="btn-small btn-edit" onclick="editItem('${item.id}')">Edit</button>
                     <button class="btn-small btn-delete" onclick="deleteItem('${item.id}')">Delete</button>
                 </td>
@@ -372,6 +377,32 @@ async function deleteItem(id) {
         loadItems();
     } catch (error) {
         showToast('Failed to delete item', 'error');
+    }
+}
+
+// Return Item from Dashboard
+async function returnItem(id) {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+
+    if (!confirm(`Return "${item.name}" from ${item.borrowed_by}?`)) return;
+
+    try {
+        const res = await fetch(`${API_URL}/return`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ item_id: id, notes: 'Returned from dashboard' })
+        });
+
+        if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.error || 'Return failed');
+        }
+
+        showToast('Item returned successfully!', 'success');
+        loadItems();
+    } catch (error) {
+        showToast(error.message, 'error');
     }
 }
 
