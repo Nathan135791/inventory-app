@@ -43,9 +43,10 @@
                     <thead>
                         <tr>
                             <th>Name</th>
-                            <th>Quantity</th>
-                            <th>Notes</th>
-                            <th>Last Updated</th>
+                            <th>Qty</th>
+                            <th>Status</th>
+                            <th>With / Purpose</th>
+                            <th>Due Date</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -115,14 +116,53 @@
                     <span>Available: <strong id="availableQty">0</strong></span>
                 </div>
                 <div class="form-group">
-                    <label for="checkoutQty">Quantity to Remove</label>
+                    <label for="borrowedBy">Borrowed By (Name)</label>
+                    <input type="text" id="borrowedBy" required placeholder="Who is borrowing this?">
+                </div>
+                <div class="form-group">
+                    <label for="purpose">Purpose</label>
+                    <input type="text" id="purpose" placeholder="What for?">
+                </div>
+                <div class="form-group">
+                    <label for="duration">Duration</label>
+                    <select id="duration">
+                        <option value="1 day">1 Day</option>
+                        <option value="2 days">2 Days</option>
+                        <option value="3 days">3 Days</option>
+                        <option value="1 week" selected>1 Week</option>
+                        <option value="2 weeks">2 Weeks</option>
+                        <option value="1 month">1 Month</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="checkoutQty">Quantity</label>
                     <input type="number" id="checkoutQty" min="1" value="1" required>
                 </div>
                 <div class="form-group">
                     <label for="checkoutNotes">Notes (optional)</label>
-                    <textarea id="checkoutNotes" rows="3" placeholder="Reason for checkout..."></textarea>
+                    <textarea id="checkoutNotes" rows="2" placeholder="Additional notes..."></textarea>
                 </div>
                 <button type="submit" class="btn-danger">Check Out</button>
+            </form>
+
+            <h2 style="margin-top: 30px;">Return Items</h2>
+            <form id="returnForm" class="form-card">
+                <div class="form-group">
+                    <label for="returnItemSelect">Select Item to Return</label>
+                    <select id="returnItemSelect" required>
+                        <option value="">-- Select Checked Out Item --</option>
+                    </select>
+                </div>
+                <div class="item-info hidden" id="returnItemInfo">
+                    <p><strong>Borrowed by:</strong> <span id="returnBorrowedBy">-</span></p>
+                    <p><strong>Purpose:</strong> <span id="returnPurpose">-</span></p>
+                    <p><strong>Checked out:</strong> <span id="returnCheckedOutAt">-</span></p>
+                </div>
+                <div class="form-group">
+                    <label for="returnNotes">Return Notes (optional)</label>
+                    <textarea id="returnNotes" rows="2" placeholder="Any notes about the return..."></textarea>
+                </div>
+                <button type="submit" class="btn-primary">Mark as Returned</button>
             </form>
         </section>
 
@@ -136,7 +176,8 @@
                             <th>Date</th>
                             <th>Item</th>
                             <th>Type</th>
-                            <th>Quantity</th>
+                            <th>By</th>
+                            <th>Purpose</th>
                             <th>Notes</th>
                         </tr>
                     </thead>

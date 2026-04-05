@@ -138,10 +138,14 @@ app.post('/api/checkin', async (req, res) => {
 // Check-out (remove quantity from item)
 app.post('/api/checkout', async (req, res) => {
     try {
-        const { item_id, quantity, notes } = req.body;
+        const { item_id, quantity, notes, borrowed_by, purpose, duration } = req.body;
 
         if (!item_id || !quantity) {
             return res.status(400).json({ error: 'Item ID and quantity are required' });
+        }
+
+        if (!borrowed_by) {
+            return res.status(400).json({ error: 'Borrower name is required' });
         }
 
         // Get current item
@@ -159,11 +163,40 @@ app.post('/api/checkout', async (req, res) => {
             return res.status(400).json({ error: 'Insufficient quantity' });
         }
 
-        // Update quantity
+        // Calculate due date if duration provided
+        let due_date = null;
+        if (duration) {
+            due_date = new Date();
+            const durationLower = duration.toLowerCase();
+            if (durationLower.includes('day')) {
+                const days = parseInt(duration) || 1;
+                due_date.setDate(due_date.getDate() + days);
+            } else if (durationLower.includes('week')) {
+                const weeks = parseInt(duration) || 1;
+                due_date.setDate(due_date.getDate() + (weeks * 7));
+            } else if (durationLower.includes('month')) {
+                const months = parseInt(duration) || 1;
+                due_date.setMonth(due_date.getMonth() + months);
+            } else {
+                // Default: try to parse as days
+                const days = parseInt(duration) || 1;
+                due_date.setDate(due_date.getDate() + days);
+            }
+        }
+
+        // Update quantity and status
         const newQuantity = item.quantity - parseInt(quantity);
         const { data, error } = await supabase
             .from('inventory_items')
-            .update({ quantity: newQuantity })
+            .update({
+                quantity: newQuantity,
+                status: 'checked_out',
+                borrowed_by,
+                purpose,
+                duration,
+                due_date,
+                checked_out_at: new Date().toISOString()
+            })
             .eq('id', item_id)
             .select()
             .single();
@@ -175,13 +208,69 @@ app.post('/api/checkout', async (req, res) => {
             item_id,
             type: 'checkout',
             quantity: parseInt(quantity),
-            notes
+            notes,
+            borrowed_by,
+            purpose,
+            duration,
+            due_date
         }]);
 
         res.json(data);
     } catch (error) {
         console.error('Error checking out:', error);
         res.status(500).json({ error: 'Failed to check out' });
+    }
+});
+
+// Return item (mark as back home)
+app.post('/api/return', async (req, res) => {
+    try {
+        const { item_id, notes } = req.body;
+
+        if (!item_id) {
+            return res.status(400).json({ error: 'Item ID is required' });
+        }
+
+        // Get current item
+        const { data: item, error: fetchError } = await supabase
+            .from('inventory_items')
+            .select('*')
+            .eq('id', item_id)
+            .single();
+
+        if (fetchError || !item) {
+            return res.status(404).json({ error: 'Item not found' });
+        }
+
+        // Update status to available
+        const { data, error } = await supabase
+            .from('inventory_items')
+            .update({
+                status: 'available',
+                borrowed_by: null,
+                purpose: null,
+                duration: null,
+                due_date: null,
+                checked_out_at: null
+            })
+            .eq('id', item_id)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        // Log transaction
+        await supabase.from('transactions').insert([{
+            item_id,
+            type: 'checkin',
+            quantity: 0,
+            notes: notes || 'Item returned'
+        }]);
+
+        res.json(data);
+    } catch (error) {
+        console.error('Error returning item:', error);
+        res.status(500).json({ error: 'Failed to return item' });
     }
 });
 

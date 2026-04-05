@@ -106,18 +106,21 @@ function setupForms() {
         }
     });
 
-    // Checkout Form
+    // Checkout Form - Updated with new fields
     document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const item_id = document.getElementById('checkoutItemSelect').value;
         const quantity = document.getElementById('checkoutQty').value;
         const notes = document.getElementById('checkoutNotes').value;
+        const borrowed_by = document.getElementById('borrowedBy').value;
+        const purpose = document.getElementById('purpose').value;
+        const duration = document.getElementById('duration').value;
 
         try {
             const res = await fetch(`${API_URL}/checkout`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ item_id, quantity, notes })
+                body: JSON.stringify({ item_id, quantity, notes, borrowed_by, purpose, duration })
             });
 
             if (!res.ok) {
@@ -129,6 +132,35 @@ function setupForms() {
             e.target.reset();
             document.getElementById('checkoutItemInfo').classList.add('hidden');
             loadItems();
+            populateItemSelects();
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+    });
+
+    // Return Form
+    document.getElementById('returnForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const item_id = document.getElementById('returnItemSelect').value;
+        const notes = document.getElementById('returnNotes').value;
+
+        try {
+            const res = await fetch(`${API_URL}/return`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ item_id, notes })
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || 'Return failed');
+            }
+
+            showToast('Item returned successfully!', 'success');
+            e.target.reset();
+            document.getElementById('returnItemInfo').classList.add('hidden');
+            loadItems();
+            populateItemSelects();
         } catch (error) {
             showToast(error.message, 'error');
         }
@@ -143,6 +175,22 @@ function setupForms() {
         if (item) {
             document.getElementById('availableQty').textContent = item.quantity;
             document.getElementById('checkoutQty').max = item.quantity;
+            infoDiv.classList.remove('hidden');
+        } else {
+            infoDiv.classList.add('hidden');
+        }
+    });
+
+    // Show return item info on select
+    document.getElementById('returnItemSelect').addEventListener('change', (e) => {
+        const itemId = e.target.value;
+        const item = items.find(i => i.id === itemId);
+        const infoDiv = document.getElementById('returnItemInfo');
+
+        if (item && item.status === 'checked_out') {
+            document.getElementById('returnBorrowedBy').textContent = item.borrowed_by || '-';
+            document.getElementById('returnPurpose').textContent = item.purpose || '-';
+            document.getElementById('returnCheckedOutAt').textContent = item.checked_out_at ? formatDate(item.checked_out_at) : '-';
             infoDiv.classList.remove('hidden');
         } else {
             infoDiv.classList.add('hidden');
@@ -177,49 +225,81 @@ async function loadItems(search = '') {
     }
 }
 
-// Render Inventory Table
+// Render Inventory Table - Updated with status
 function renderInventoryTable() {
     const tbody = document.getElementById('inventoryBody');
 
     if (items.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No items found. Add your first item!</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No items found. Add your first item!</td></tr>';
         return;
     }
 
-    tbody.innerHTML = items.map(item => `
-        <tr class="${item.quantity <= 5 ? 'low-stock' : ''}">
-            <td>${escapeHtml(item.name)}</td>
-            <td>${item.quantity}</td>
-            <td>${escapeHtml(item.notes || '-')}</td>
-            <td>${formatDate(item.updated_at)}</td>
-            <td>
-                <button class="btn-small btn-edit" onclick="editItem('${item.id}')">Edit</button>
-                <button class="btn-small btn-delete" onclick="deleteItem('${item.id}')">Delete</button>
-            </td>
-        </tr>
-    `).join('');
+    tbody.innerHTML = items.map(item => {
+        const isCheckedOut = item.status === 'checked_out';
+        const statusBadge = isCheckedOut
+            ? '<span class="badge checkout">Checked Out</span>'
+            : '<span class="badge checkin">Available</span>';
+
+        const withPurpose = isCheckedOut
+            ? `<strong>${escapeHtml(item.borrowed_by || '-')}</strong><br><small>${escapeHtml(item.purpose || '-')}</small>`
+            : '<span class="home-status">Back Home</span>';
+
+        const dueDate = isCheckedOut && item.due_date
+            ? formatDate(item.due_date)
+            : '-';
+
+        return `
+            <tr class="${isCheckedOut ? 'checked-out' : ''} ${item.quantity <= 5 ? 'low-stock' : ''}">
+                <td>${escapeHtml(item.name)}</td>
+                <td>${item.quantity}</td>
+                <td>${statusBadge}</td>
+                <td>${withPurpose}</td>
+                <td>${dueDate}</td>
+                <td>
+                    <button class="btn-small btn-edit" onclick="editItem('${item.id}')">Edit</button>
+                    <button class="btn-small btn-delete" onclick="deleteItem('${item.id}')">Delete</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
 }
 
 // Update Stats
 function updateStats() {
     document.getElementById('totalItems').textContent = items.length;
     document.getElementById('totalQuantity').textContent = items.reduce((sum, i) => sum + i.quantity, 0);
-    document.getElementById('lowStock').textContent = items.filter(i => i.quantity <= 5).length;
+    const checkedOut = items.filter(i => i.status === 'checked_out').length;
+    document.getElementById('lowStock').textContent = checkedOut;
+    // Update label
+    const lowStockLabel = document.querySelector('#lowStock').nextElementSibling;
+    if (lowStockLabel) lowStockLabel.textContent = 'Checked Out';
 }
 
 // Populate Item Selects
 function populateItemSelects() {
-    const selects = [
-        document.getElementById('existingItemSelect'),
-        document.getElementById('checkoutItemSelect')
-    ];
+    const existingSelect = document.getElementById('existingItemSelect');
+    const checkoutSelect = document.getElementById('checkoutItemSelect');
+    const returnSelect = document.getElementById('returnItemSelect');
 
-    selects.forEach(select => {
-        if (select) {
-            select.innerHTML = '<option value="">-- Select Item --</option>' +
-                items.map(item => `<option value="${item.id}">${escapeHtml(item.name)} (${item.quantity})</option>`).join('');
-        }
-    });
+    // Available items for checkout
+    const availableItems = items.filter(i => i.status !== 'checked_out' && i.quantity > 0);
+    // Checked out items for return
+    const checkedOutItems = items.filter(i => i.status === 'checked_out');
+
+    if (existingSelect) {
+        existingSelect.innerHTML = '<option value="">-- Select Item --</option>' +
+            items.map(item => `<option value="${item.id}">${escapeHtml(item.name)} (${item.quantity})</option>`).join('');
+    }
+
+    if (checkoutSelect) {
+        checkoutSelect.innerHTML = '<option value="">-- Select Item --</option>' +
+            availableItems.map(item => `<option value="${item.id}">${escapeHtml(item.name)} (${item.quantity} available)</option>`).join('');
+    }
+
+    if (returnSelect) {
+        returnSelect.innerHTML = '<option value="">-- Select Checked Out Item --</option>' +
+            checkedOutItems.map(item => `<option value="${item.id}">${escapeHtml(item.name)} (with ${escapeHtml(item.borrowed_by || 'Unknown')})</option>`).join('');
+    }
 }
 
 // Load Transactions
@@ -234,12 +314,12 @@ async function loadTransactions() {
     }
 }
 
-// Render Transactions
+// Render Transactions - Updated with borrowed_by and purpose
 function renderTransactions(transactions) {
     const tbody = document.getElementById('historyBody');
 
     if (transactions.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No transactions yet</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No transactions yet</td></tr>';
         return;
     }
 
@@ -247,8 +327,9 @@ function renderTransactions(transactions) {
         <tr>
             <td>${formatDate(t.created_at)}</td>
             <td>${escapeHtml(t.inventory_items?.name || 'Unknown')}</td>
-            <td><span class="badge ${t.type}">${t.type === 'checkin' ? 'IN' : 'OUT'}</span></td>
-            <td>${t.type === 'checkin' ? '+' : '-'}${t.quantity}</td>
+            <td><span class="badge ${t.type}">${t.type === 'checkin' ? 'RETURNED' : 'OUT'}</span></td>
+            <td>${escapeHtml(t.borrowed_by || '-')}</td>
+            <td>${escapeHtml(t.purpose || '-')}</td>
             <td>${escapeHtml(t.notes || '-')}</td>
         </tr>
     `).join('');
