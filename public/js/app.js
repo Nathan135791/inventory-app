@@ -261,7 +261,6 @@ function renderInventoryTable() {
                 <td>${dueDate}</td>
                 <td>
                     ${returnBtn}
-                    <button class="btn-small btn-edit" onclick="editItem('${item.id}')">Edit</button>
                 </td>
             </tr>
         `;
