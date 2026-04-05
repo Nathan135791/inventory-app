@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Manager</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Inventory Manager</h1>
+            <nav>
+                <button class="nav-btn active" data-view="dashboard">Dashboard</button>
+                <button class="nav-btn" data-view="checkin">Check In</button>
+                <button class="nav-btn" data-view="checkout">Check Out</button>
+                <button class="nav-btn" data-view="history">History</button>
+            </nav>
+        </header>
+
+        <!-- Dashboard View -->
+        <section id="dashboard" class="view active">
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="Search items...">
+                <button id="searchBtn">Search</button>
+            </div>
+            <div class="stats">
+                <div class="stat-card">
+                    <span class="stat-value" id="totalItems">0</span>
+                    <span class="stat-label">Total Items</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value" id="totalQuantity">0</span>
+                    <span class="stat-label">Total Quantity</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value" id="lowStock">0</span>
+                    <span class="stat-label">Low Stock</span>
+                </div>
+            </div>
+            <div class="table-container">
+                <table id="inventoryTable">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Quantity</th>
+                            <th>Notes</th>
+                            <th>Last Updated</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryBody">
+                        <!-- Items will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Check-In View -->
+        <section id="checkin" class="view">
+            <h2>Check In Items</h2>
+            <div class="form-toggle">
+                <button class="toggle-btn active" data-type="new">Add New Item</button>
+                <button class="toggle-btn" data-type="existing">Add to Existing</button>
+            </div>
+
+            <!-- New Item Form -->
+            <form id="newItemForm" class="form-card">
+                <div class="form-group">
+                    <label for="newItemName">Item Name</label>
+                    <input type="text" id="newItemName" required>
+                </div>
+                <div class="form-group">
+                    <label for="newItemQty">Quantity</label>
+                    <input type="number" id="newItemQty" min="1" value="1" required>
+                </div>
+                <div class="form-group">
+                    <label for="newItemNotes">Notes (optional)</label>
+                    <textarea id="newItemNotes" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn-primary">Add Item</button>
+            </form>
+
+            <!-- Existing Item Form -->
+            <form id="existingItemForm" class="form-card hidden">
+                <div class="form-group">
+                    <label for="existingItemSelect">Select Item</label>
+                    <select id="existingItemSelect" required>
+                        <option value="">-- Select Item --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="addQty">Quantity to Add</label>
+                    <input type="number" id="addQty" min="1" value="1" required>
+                </div>
+                <div class="form-group">
+                    <label for="addNotes">Notes (optional)</label>
+                    <textarea id="addNotes" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn-primary">Check In</button>
+            </form>
+        </section>
+
+        <!-- Check-Out View -->
+        <section id="checkout" class="view">
+            <h2>Check Out Items</h2>
+            <form id="checkoutForm" class="form-card">
+                <div class="form-group">
+                    <label for="checkoutItemSelect">Select Item</label>
+                    <select id="checkoutItemSelect" required>
+                        <option value="">-- Select Item --</option>
+                    </select>
+                </div>
+                <div class="item-info hidden" id="checkoutItemInfo">
+                    <span>Available: <strong id="availableQty">0</strong></span>
+                </div>
+                <div class="form-group">
+                    <label for="checkoutQty">Quantity to Remove</label>
+                    <input type="number" id="checkoutQty" min="1" value="1" required>
+                </div>
+                <div class="form-group">
+                    <label for="checkoutNotes">Notes (optional)</label>
+                    <textarea id="checkoutNotes" rows="3" placeholder="Reason for checkout..."></textarea>
+                </div>
+                <button type="submit" class="btn-danger">Check Out</button>
+            </form>
+        </section>
+
+        <!-- History View -->
+        <section id="history" class="view">
+            <h2>Transaction History</h2>
+            <div class="table-container">
+                <table id="historyTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Item</th>
+                            <th>Type</th>
+                            <th>Quantity</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyBody">
+                        <!-- Transactions will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Toast Notification -->
+        <div id="toast" class="toast hidden"></div>
+    </div>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>
